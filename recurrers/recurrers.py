@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
-import recurrer
+import recurrers
 
 
-class Sobloid(recurrer.RecurrerLayer):
+class Sobloid(recurrers.RecurrerLayer):
     def __init__(self, embed):
         super().__init__()
         self.lin_in = nn.Linear(embed, embed)

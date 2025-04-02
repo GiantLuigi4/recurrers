@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import recurrer
+import recurrers
 
 
 class GRUStateGen(nn.Module):
@@ -21,7 +21,7 @@ class LSTMStateGen(nn.Module):
         return (tuple(self.state.repeat(1, 1, batch, 1)),)
 
 
-class RNNAdapter(recurrer.RecurrerLayer):
+class RNNAdapter(recurrers.RecurrerLayer):
     """
         Adapter is intended for batch first rnns
     """
@@ -43,7 +43,7 @@ class RNNAdapter(recurrer.RecurrerLayer):
         return xvv
 
 
-class FeedNetAdapter(recurrer.RecurrerLayer):
+class FeedNetAdapter(recurrers.RecurrerLayer):
     """
         Adapter is intended for batch first rnns
     """

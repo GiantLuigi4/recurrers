@@ -23,11 +23,18 @@ class RecurrerLayer(nn.Module):
     # unless triton makes cases specifically for handling loops like this, I cannot do much about that
     @torch._dynamo.disable
     def recurrent_forward(self, x: torch.Tensor, *state):
-        buf = []  # the output size is unknown by this base function, so a list is used
-        for i in range(0, x.size(1)):
+        seq_len = x.size(1)
+        batch_size = x.size(0)
+
+        v, *state = self.forward(x[:, 0], *state)
+        output = torch.empty((batch_size, seq_len, v.shape[-1]), device=v.device, dtype=v.dtype)
+        output[:, 0] = v
+
+        for i in range(1, seq_len):
             v, *state = self.forward(x[:, i, :], *state)
-            buf.append(v)
-        return torch.cat(buf, 1), *state
+            output[:, 0] = v
+
+        return output, *state
 
     """
         Processes a single new piece of information
@@ -89,7 +96,7 @@ class Recurrer(nn.Module):
                 for e in grid:
                     gate_grid = min(gate_grid, e['lock'])
 
-            gate_seq = x[:, gate_pos:(gate_pos + gate_grid), :]
+            gate_seq = x[:, gate_pos:(gate_pos + gate_grid)]
 
             for i in range(0, len(self.layers)):
                 clayer = self.layers[i]

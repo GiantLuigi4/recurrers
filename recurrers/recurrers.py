@@ -4,6 +4,11 @@ import recurrers
 
 
 class Sobloid(recurrers.RecurrerLayer):
+    """
+        Uses a sobel (edge detection) mechanism to transform a sequence
+        I'm not sure if there is a real advantage to this, but it works nicely as an example recurrer
+    """
+
     def __init__(self, embed):
         super().__init__()
         self.lin_in = nn.Linear(embed, embed)
@@ -66,3 +71,50 @@ class Sobloid(recurrers.RecurrerLayer):
         cyv: torch.Tensor = self.lin_final(cvv)
 
         return cyv, x, index, cvv
+
+
+class MomentumTransformer(recurrers.RecurrerLayer):
+    """
+        Uses a momentum inspired mechanism to transform a sequence
+        This seems to end up being a very quickly trainable transformation, and I'm not sure why
+    """
+
+    def __init__(self, embedding, alpha=0.95):
+        super().__init__()
+        self.lin_in = nn.Linear(embedding, embedding)
+        self.lin_pos = nn.Linear(embedding, embedding)
+        self.lin_momentum = nn.Linear(embedding, embedding)
+        self.lin_out = nn.Linear(embedding, embedding)
+
+        self.state = nn.Parameter(
+            torch.rand((3, 1, 1, embedding)),
+            requires_grad=True
+        )
+
+        self.alpha = alpha
+        self.gamma = (1 - alpha) / alpha
+
+    def make_state(self, batch_size: int):
+        state = list(self.state.repeat(1, batch_size, 1, 1))
+        return state
+
+    # def forward(self, x, pos, prev, dmot):
+    #     curr = x
+    #     dprev = curr - prev
+    #     ndmot = (dmot + dprev) * 0.95
+    #     c = prev + ndmot
+    #
+    #     reconstr = c + ndmot / 19.0 - dmot
+    #
+    #     return reconstr, c, curr, ndmot
+
+    # TODO: recurrent fast-path
+    def forward(self, x, pos, prev, dmot):
+        curr = self.lin_in(x)
+        dprev = curr - prev
+        ndmot = (dmot + dprev) * self.alpha
+        c = prev + ndmot
+
+        reconstr = self.lin_pos(c) + self.lin_momentum(ndmot) / self.gamma - self.lin_momentum(dmot)
+
+        return self.lin_out(reconstr), c, curr, ndmot

@@ -25,7 +25,7 @@ class Sobloid(recurrers.RecurrerLayer):
             torch.zeros(batch_size, 1, self.embed).to(self.lin_in.weight.device)
         )
 
-    def recurrent_forward(self, x: torch.Tensor, state: torch.Tensor, index: int, state_cvv: torch.Tensor):
+    def parallel_forward(self, x: torch.Tensor, state: torch.Tensor, index: int, state_cvv: torch.Tensor):
         x = self.lin_in(x)
 
         cvv: torch.Tensor = state_cvv

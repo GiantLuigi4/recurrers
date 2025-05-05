@@ -22,7 +22,7 @@ class RecurrerLayer(nn.Module):
     # unfortunately, if you want to be able to have efficient recurrent forwards, you have to override this
     # unless triton makes cases specifically for handling loops like this, I cannot do much about that
     @torch._dynamo.disable
-    def recurrent_forward(self, x: torch.Tensor, *state):
+    def parallel_forward(self, x: torch.Tensor, *state):
         seq_len = x.size(1)
         batch_size = x.size(0)
 
@@ -101,7 +101,7 @@ class Recurrer(nn.Module):
             for i in range(0, len(self.layers)):
                 clayer = self.layers[i]
                 cstate = state.states[i]
-                gate_seq, *cstate = clayer.recurrent_forward(gate_seq, *cstate)
+                gate_seq, *cstate = clayer.parallel_forward(gate_seq, *cstate)
                 state.states[i] = cstate
 
             gate_pos = gate_pos + gate_grid

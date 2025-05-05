@@ -36,10 +36,47 @@ class RNNAdapter(recurrers.RecurrerLayer):
     def make_state(self, batch_size: int):
         return self.initial_state(batch_size)
 
-    def forward(self, x: torch.Tensor, *state):
-        xvv = self.layer(x, *state)
+    def parallel_forward(self, x: torch.Tensor, *state):
+        xvv, state = self.layer(x, *state)
         if self.proj_out is not None:
             return self.proj_out(xvv[0]), xvv[1]
+        return xvv, state
+
+    def forward(self, x: torch.Tensor, *state):
+        xvv, state = self.layer(x.view(-1, 1, x.shape[-1]), *state)
+        if self.proj_out is not None:
+            return self.proj_out(xvv[0]), xvv[1]
+        return xvv, state
+
+
+class MultiheadAttention(recurrers.RecurrerLayer):
+    """
+        Adapter is intended for batch first rnns
+    """
+
+    def __init__(self, embed, n_heads):
+        super().__init__()
+        self.attn = nn.MultiheadAttention(
+            embed, n_heads,
+            batch_first=True
+        )
+
+    def make_state(self, batch_size: int):
+        # TODO: more efficient recurrence via activation caching
+        return []
+
+    def forward(self, x: torch.Tensor, *state):
+        attn_mask = torch.triu(torch.ones([x.shape[1], x.shape[1]], device=x.device), diagonal=1).bool()
+        xvv = self.attn(
+            x, x, x, attn_mask=attn_mask
+        )
+        return xvv
+
+    def parallel_forward(self, x: torch.Tensor, *state):
+        attn_mask = torch.triu(torch.ones([x.shape[1], x.shape[1]], device=x.device), diagonal=1).bool()
+        xvv = self.attn(
+            x, x, x, attn_mask=attn_mask
+        )
         return xvv
 
 
@@ -56,7 +93,7 @@ class FeedNetAdapter(recurrers.RecurrerLayer):
     def make_state(self, batch_size: int):
         return ()
 
-    def recurrent_forward(self, x: torch.Tensor, *state):
+    def parallel_forward(self, x: torch.Tensor, *state):
         return self.mdl(x), *state
 
     def forward(self, x: torch.Tensor, *state):

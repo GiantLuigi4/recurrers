@@ -28,7 +28,7 @@ class LightweightKnowledgeFeeder(recurrers.RecurrerLayer):
     def make_state(self, batch_size: int):
         return []
 
-    def recurrent_forward(self, x: torch.Tensor, *state):
+    def parallel_forward(self, x: torch.Tensor, *state):
         return self.forward(x)
 
     def forward(self, x: torch.Tensor, *state):
@@ -42,5 +42,26 @@ class LightweightKnowledgeFeeder(recurrers.RecurrerLayer):
         output = output.sum(dim=-2)
         x = x + self.lin_debank(output)
         return x, []
+
+
+class RotaryEmbedding(recurrers.RecurrerLayer):
+    def __init__(self, num_embeddings: int, dmodel: int):
+        super().__init__()
+        self.emb = nn.Embedding(num_embeddings, dmodel)
+        self.num_embeddings = num_embeddings
+
+    def make_state(self, batch_size: int):
+        return [0]
+
+    def parallel_forward(self, x: torch.Tensor, index):
+        range = torch.arange(index, index + x.shape[1], device=x.device)
+        range = range % self.num_embeddings
+        return x + self.emb.weight[range], (index + x.shape[1]) % self.num_embeddings
+
+    def forward(self, x: torch.Tensor, index: int):
+        idex = index + 1
+        if idex >= self.num_embeddings:
+            idex = 0
+        return x + self.emb.weight[index], idex
 
 # TODO: sequence recurrer (nn.Sequential for recurrers)

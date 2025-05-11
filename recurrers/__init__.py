@@ -25,3 +25,8 @@ import recurrers.adapter as adapter
 Various stateful recurrent models
 """
 import recurrers.recurrers as builtin
+
+"""
+minimal recurrent neural networks
+"""
+import recurrers.minrnns as minrnn

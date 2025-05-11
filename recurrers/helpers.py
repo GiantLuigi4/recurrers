@@ -44,7 +44,7 @@ class LightweightKnowledgeFeeder(recurrers.RecurrerLayer):
         return x, []
 
 
-class RotaryEmbedding(recurrers.RecurrerLayer):
+class CyclicEmbedding(recurrers.RecurrerLayer):
     def __init__(self, num_embeddings: int, dmodel: int):
         super().__init__()
         self.emb = nn.Embedding(num_embeddings, dmodel)

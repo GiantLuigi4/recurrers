@@ -54,3 +54,10 @@ Recurrers has been setup to not degrade performance when compiled with triton
 If you make your own recurrer, you may have to also make it so that it properly avoids some of triton's attempted optimizations
 
 Check recurrers.py for a sample recurrer
+
+## Dependencies
+
+For the minrnns module, you must install minGRU-pytorch
+```shell
+$ pip install minGRU-pytorch
+```
